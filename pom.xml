@@ -13,8 +13,8 @@
 	<description>Standard Maven wagon support for s3:// urls</description>
 
 	<properties>
-		<amazonaws.version>1.11.276</amazonaws.version>
-		<wagon.version>3.0.0</wagon.version>
+		<amazonaws.version>1.11.762</amazonaws.version>
+		<wagon.version>3.3.4</wagon.version>
 		<slf4j.version>1.7.25</slf4j.version>
 		<logback.version>1.2.3</logback.version>
 		<junit.version>4.12</junit.version>
@@ -30,7 +30,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
+			<artifactId>aws-java-sdk-s3</artifactId>
 			<version>${amazonaws.version}</version>
 			<exclusions>
 				<exclusion>
