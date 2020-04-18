@@ -92,13 +92,9 @@ public final class AmazonS3Wagon extends AbstractWagon {
         this.baseDirectory = baseDirectory;
     }
 
-    private static ObjectMetadata getObjectMetadata(AmazonS3 amazonS3, String bucketName, String baseDirectory,
-            String resourceName) {
-        return amazonS3.getObjectMetadata(bucketName, getKey(baseDirectory, resourceName));
-    }
-
     private static String getKey(String baseDirectory, String resourceName) {
-        return String.format(KEY_FORMAT, baseDirectory, resourceName);
+        return String.format(KEY_FORMAT, baseDirectory, resourceName)
+            .replaceAll("/[^/]+/{1,}\\.\\./","/");
     }
 
     private static List<String> getResourceNames(ObjectListing objectListing, Pattern pattern) {
@@ -185,7 +181,7 @@ public final class AmazonS3Wagon extends AbstractWagon {
     @Override
     protected boolean doesRemoteResourceExist(String resourceName) {
         try {
-            getObjectMetadata(this.amazonS3, this.bucketName, this.baseDirectory, resourceName);
+            this.amazonS3.getObjectMetadata(this.bucketName, getKey(this.baseDirectory, resourceName));
             return true;
         } catch (AmazonServiceException e) {
             return false;
@@ -195,7 +191,7 @@ public final class AmazonS3Wagon extends AbstractWagon {
     @Override
     protected boolean isRemoteResourceNewer(String resourceName, long timestamp) throws ResourceDoesNotExistException {
         try {
-            Date lastModified = getObjectMetadata(this.amazonS3, this.bucketName, this.baseDirectory, resourceName)
+            Date lastModified = this.amazonS3.getObjectMetadata(this.bucketName, getKey(this.baseDirectory, resourceName))
                     .getLastModified();
             return lastModified == null || lastModified.getTime() > timestamp;
         } catch (AmazonServiceException e) {
@@ -225,7 +221,6 @@ public final class AmazonS3Wagon extends AbstractWagon {
                 objectListing = this.amazonS3.listObjects(listObjectsRequest);
                 directoryContents.addAll(getResourceNames(objectListing, pattern));
             }
-
             return directoryContents;
         } catch (AmazonServiceException e) {
             throw new ResourceDoesNotExistException(String.format("'%s' does not exist", directory), e);
@@ -239,7 +234,6 @@ public final class AmazonS3Wagon extends AbstractWagon {
         OutputStream out = null;
         try {
             S3Object s3Object = this.amazonS3.getObject(this.bucketName, getKey(this.baseDirectory, resourceName));
-
             in = s3Object.getObjectContent();
             out = new TransferProgressFileOutputStream(destination, transferProgress);
 
@@ -271,7 +265,6 @@ public final class AmazonS3Wagon extends AbstractWagon {
             objectMetadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
 
             in = new TransferProgressFileInputStream(source, transferProgress);
-
             this.amazonS3.putObject(new PutObjectRequest(this.bucketName, key, in, objectMetadata));
         } catch (AmazonServiceException e) {
             throw new TransferFailedException(String.format("Cannot write file to '%s'", destination), e);
